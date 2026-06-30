@@ -1,0 +1,18 @@
+[build]
+  publish = "."
+  functions = "netlify/functions"
+
+[[redirects]]
+  from = "/api/config-status"
+  to = "/.netlify/functions/config-status"
+  status = 200
+
+[[redirects]]
+  from = "/api/analyze-article"
+  to = "/.netlify/functions/analyze-article"
+  status = 200
+
+[[redirects]]
+  from = "/api/save-config"
+  to = "/.netlify/functions/save-config"
+  status = 200

@@ -1,0 +1,13 @@
+{
+  "name": "ai-words",
+  "version": "1.0.0",
+  "description": "AI vocabulary learning and article analysis app for beginners.",
+  "private": true,
+  "scripts": {
+    "start": "node server.js",
+    "check": "node --check app.js && node --check server.js && node --check words.js && node --check netlify/functions/analyze-article.js && node --check netlify/functions/config-status.js && node --check netlify/functions/save-config.js"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

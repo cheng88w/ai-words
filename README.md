@@ -4,58 +4,64 @@
 
 ## 当前功能
 
-- 每日 5 个 AI 术语学习，包含新词和到期复习词
+- 每日 AI 术语学习，包含新词和到期复习词
 - 单词详情：中文翻译、AI 语境、通俗解释、例句、易混淆点、相关词
-- 今日小测与打卡
+- 今日小测与学习打卡
 - AI 词库搜索与分类筛选
-- 文章解析：粘贴英文 AI 文章，生成中文翻译，识别核心术语
-- 候选词入库：从文章中选择核心词，一键补全词条并加入知识库
-- 简单复习机制：答错优先复习，学过的词按 1、2、4、7、15 天间隔复习
+- 文章解析：粘贴英文 AI 文章，生成中文翻译，并识别核心术语
+- 候选词入库：从文章中选择核心词，一键加入自己的知识库
+- 本地学习记录：学习进度、打卡记录和自定义词条保存在浏览器 localStorage
 
-## 第一次使用
+## 本地运行
 
-先在项目根目录准备 `.env`。
-
-我已经创建好了 `.env` 文件，你只需要打开它，把这一行：
-
-```txt
-DEEPSEEK_API_KEY=replace_with_your_new_deepseek_api_key
-```
-
-改成你的新 DeepSeek Key，例如：
+1. 复制 `.env.example` 为 `.env`。
+2. 在 `.env` 里填写你的 DeepSeek Key：
 
 ```txt
-DEEPSEEK_API_KEY=sk-你的新key
-```
-
-不要修改或删除这一行：
-
-```txt
+DEEPSEEK_API_KEY=sk-your-key
 DEEPSEEK_MODEL=deepseek-chat
 ```
 
-保存后，重启本地服务：
+3. 启动服务：
 
 ```bash
-node server.js
+npm start
 ```
 
-然后打开：
+4. 打开：
 
 ```txt
 http://127.0.0.1:8080/
 ```
 
+## 部署到 Netlify
+
+这个项目已经支持 Netlify。前端页面由 Netlify 托管，DeepSeek 请求通过 Netlify Functions 在服务端执行。
+
+1. 把代码推送到 GitHub。
+2. 打开 Netlify，选择 `Add new site` -> `Import an existing project`。
+3. 选择这个 GitHub 仓库。
+4. 构建设置保持默认即可：
+   - Publish directory: `.`
+   - Functions directory: `netlify/functions`
+5. 在 Netlify 的 `Site configuration` -> `Environment variables` 添加：
+
+```txt
+DEEPSEEK_API_KEY=sk-your-key
+DEEPSEEK_MODEL=deepseek-chat
+NODE_ENV=production
+```
+
+6. 部署完成后，打开 Netlify 给你的网址即可使用。
+
 ## 重要提醒
 
-不要把 API Key 发到聊天、截图、仓库或公开网页里。
+不要把 DeepSeek API Key 发到聊天、截图、仓库或公开网页里。
 
-`.env` 已经被 `.gitignore` 忽略，不会进入 Git 提交。
+本地 `.env` 已经被 `.gitignore` 忽略，不会进入 Git 提交。网页版请在 Netlify 环境变量中配置 Key，不要写进前端代码。
 
 ## 数据说明
 
 内置词库在 `words.js` 中。
 
 网页里加入知识库的词条、学习记录、打卡记录会保存在当前浏览器的 `localStorage` 中。换浏览器或清理浏览器数据后，这些本地记录不会自动同步。
-
-如果 DeepSeek 没有配置好，文章解析会自动退回到本地规则解析，但翻译质量会比较粗糙。

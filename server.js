@@ -5,6 +5,8 @@ const path = require("path");
 
 const root = __dirname;
 const port = Number(process.env.PORT || 8080);
+const host = process.env.HOST || "0.0.0.0";
+const isProduction = process.env.NODE_ENV === "production";
 const types = {
   ".html": "text/html; charset=utf-8",
   ".css": "text/css; charset=utf-8",
@@ -58,8 +60,9 @@ const server = http.createServer(async (req, res) => {
   });
 });
 
-server.listen(port, "127.0.0.1", () => {
-  console.log(`AI vocab app running at http://127.0.0.1:${port}/`);
+server.listen(port, host, () => {
+  const displayHost = host === "0.0.0.0" ? "127.0.0.1" : host;
+  console.log(`AI vocab app running at http://${displayHost}:${port}/`);
 });
 
 function loadEnv() {
@@ -84,12 +87,20 @@ function getConfigStatus() {
   return {
     configured,
     model: process.env.DEEPSEEK_MODEL || "deepseek-chat",
-    keyHint: configured ? `${key.slice(0, 3)}***${key.slice(-4)}` : ""
+    keyHint: configured && !isProduction ? `${key.slice(0, 3)}***${key.slice(-4)}` : ""
   };
 }
 
 async function handleSaveConfig(req, res) {
   try {
+    if (isProduction || !isLocalRequest(req)) {
+      sendJson(res, 403, {
+        error: "local_only",
+        message: "线上版本不能通过网页保存 API Key，请在部署平台的环境变量里配置。"
+      });
+      return;
+    }
+
     const body = await readJson(req);
     const apiKey = String(body.apiKey || "").trim();
     const model = String(body.model || "deepseek-chat").trim() || "deepseek-chat";
@@ -112,6 +123,11 @@ async function handleSaveConfig(req, res) {
   } catch (error) {
     sendJson(res, 500, { error: "save_config_failed", message: error.message || "保存配置失败。" });
   }
+}
+
+function isLocalRequest(req) {
+  const address = req.socket.remoteAddress || "";
+  return ["127.0.0.1", "::1", "::ffff:127.0.0.1"].includes(address);
 }
 
 async function handleAnalyzeArticle(req, res) {

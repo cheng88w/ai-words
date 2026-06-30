@@ -430,7 +430,7 @@ async function checkApiConfig() {
     const response = await fetch("/api/config-status");
     const data = await response.json();
     els.apiConfigStatus.textContent = data.configured
-      ? `已配置：${data.keyHint}，模型：${data.model}`
+      ? `已配置${data.keyHint ? `：${data.keyHint}` : ""}，模型：${data.model}`
       : "还没有配置有效的 DeepSeek Key。";
     if (data.model) els.deepseekModel.value = data.model;
   } catch (error) {
