@@ -1,0 +1,242 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AI 单词本</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <aside class="sidebar">
+        <div class="brand">
+          <div class="brand-mark">AI</div>
+          <div>
+            <h1>AI 单词本</h1>
+            <p>每天 10 分钟，读懂 AI 英文</p>
+          </div>
+        </div>
+
+        <nav class="nav-tabs" aria-label="主要页面">
+          <button class="nav-tab active" data-view="today">今日学习</button>
+          <button class="nav-tab" data-view="article">文章解析</button>
+          <button class="nav-tab" data-view="library">AI 词库</button>
+          <button class="nav-tab" data-view="progress">学习进度</button>
+        </nav>
+      </aside>
+
+      <main class="main">
+        <section class="topbar">
+          <div>
+            <p class="eyebrow">MVP 版本</p>
+            <h2 id="viewTitle">今日学习</h2>
+          </div>
+          <div class="topbar-actions">
+            <button class="icon-button" id="openSettings" aria-label="API 配置" title="API 配置">⚙</button>
+            <div class="streak-pill">
+              <span id="streakCount">0</span>
+              <small>连续打卡</small>
+            </div>
+          </div>
+        </section>
+
+        <section class="view active" id="todayView">
+          <div class="dashboard-grid">
+            <section class="study-panel">
+              <div class="section-heading">
+                <div>
+                  <p class="eyebrow">Daily Session</p>
+                  <h3>今天的学习清单</h3>
+                </div>
+                <button class="ghost-button" id="refreshToday">换一组</button>
+              </div>
+              <div class="session-summary" id="sessionSummary"></div>
+              <div class="word-stack" id="todayWords"></div>
+            </section>
+
+            <section class="side-panel">
+              <div class="section-heading compact">
+                <h3>今日任务</h3>
+              </div>
+              <div class="task-list">
+                <div class="task-row">
+                  <span>学习与复习</span>
+                  <strong><span id="learnedToday">0</span>/<span id="todayTotal">5</span></strong>
+                </div>
+                <div class="task-row">
+                  <span>完成小测</span>
+                  <strong id="quizStatus">未完成</strong>
+                </div>
+                <div class="task-row">
+                  <span>今日打卡</span>
+                  <strong id="checkinStatus">未完成</strong>
+                </div>
+              </div>
+
+              <div class="quiz-box">
+                <p class="eyebrow">Quick Check</p>
+                <h3 id="quizQuestion">先学习单词，再开始小测</h3>
+                <div id="quizOptions" class="quiz-options"></div>
+                <p id="quizFeedback" class="feedback"></p>
+              </div>
+
+              <button class="primary-button" id="checkinButton">完成今日打卡</button>
+            </section>
+          </div>
+        </section>
+
+        <section class="view" id="articleView">
+          <div class="article-grid">
+            <section class="study-panel">
+              <div class="section-heading">
+                <div>
+                  <p class="eyebrow">Article Reader</p>
+                  <h3>粘贴 AI 英文文章</h3>
+                </div>
+              </div>
+              <textarea id="articleInput" class="article-input" placeholder="把 X、博客、论文摘要或英文文档粘贴到这里。"></textarea>
+              <div class="article-actions">
+                <button class="primary-button inline" id="analyzeArticle">解析文章</button>
+                <button class="ghost-button" id="clearArticle">清空</button>
+              </div>
+              <p class="hint">当前是本地初译版本：会做分句解释和术语识别。接入 AI API 后可以升级为高质量全文翻译。</p>
+            </section>
+
+            <section class="side-panel">
+              <div class="section-heading compact">
+                <h3>文章统计</h3>
+              </div>
+              <div class="task-list">
+                <div class="task-row">
+                  <span>英文词数</span>
+                  <strong id="articleWordCount">0</strong>
+                </div>
+                <div class="task-row">
+                  <span>识别术语</span>
+                  <strong id="articleTermCount">0</strong>
+                </div>
+                <div class="task-row">
+                  <span>可加入词库</span>
+                  <strong id="articleNewCount">0</strong>
+                </div>
+              </div>
+            </section>
+          </div>
+
+          <section class="study-panel article-results">
+            <div class="section-heading">
+              <div>
+                <p class="eyebrow">Translation Draft</p>
+                <h3>全文初译</h3>
+              </div>
+            </div>
+            <div id="translationOutput" class="translation-output empty-state">粘贴文章后，这里会按句展示中文初译。</div>
+          </section>
+
+          <section class="study-panel article-results">
+            <div class="section-heading">
+              <div>
+                <p class="eyebrow">Core Terms</p>
+                <h3>AI 核心词汇</h3>
+              </div>
+            </div>
+            <div id="articleTerms" class="term-candidate-grid empty-state">解析后会出现可加入知识库的核心术语。</div>
+          </section>
+        </section>
+
+        <section class="view" id="libraryView">
+          <div class="library-tools">
+            <input id="searchInput" type="search" placeholder="搜索术语、中文、分类，例如 token / 嵌入 / 大模型" />
+            <select id="categoryFilter" aria-label="分类筛选">
+              <option value="all">全部分类</option>
+            </select>
+          </div>
+          <div class="library-grid" id="libraryGrid"></div>
+        </section>
+
+        <section class="view" id="progressView">
+          <div class="stats-grid">
+            <div class="stat-card">
+              <span id="totalLearned">0</span>
+              <p>已学习词汇</p>
+            </div>
+            <div class="stat-card">
+              <span id="masteredCount">0</span>
+              <p>初步掌握</p>
+            </div>
+            <div class="stat-card">
+              <span id="reviewDueCount">0</span>
+              <p>待复习词</p>
+            </div>
+            <div class="stat-card">
+              <span id="accuracyRate">0%</span>
+              <p>小测正确率</p>
+            </div>
+          </div>
+          <section class="study-panel">
+            <div class="section-heading">
+              <div>
+                <p class="eyebrow">Learning Map</p>
+                <h3>分类掌握情况</h3>
+              </div>
+            </div>
+            <div id="categoryProgress" class="category-progress"></div>
+          </section>
+        </section>
+      </main>
+    </div>
+
+    <dialog id="wordDialog">
+      <article class="dialog-card">
+        <button class="close-button" id="closeDialog" aria-label="关闭">x</button>
+        <p class="eyebrow" id="dialogCategory"></p>
+        <h2 id="dialogTerm"></h2>
+        <p class="translation" id="dialogTranslation"></p>
+        <div class="detail-block">
+          <h4>AI 语境含义</h4>
+          <p id="dialogMeaning"></p>
+        </div>
+        <div class="detail-block">
+          <h4>通俗理解</h4>
+          <p id="dialogSimple"></p>
+        </div>
+        <div class="detail-block">
+          <h4>例句</h4>
+          <p id="dialogExample"></p>
+          <p class="muted" id="dialogExampleZh"></p>
+        </div>
+        <div class="detail-block">
+          <h4>易混淆点</h4>
+          <p id="dialogConfusion"></p>
+        </div>
+        <div class="related-row" id="dialogRelated"></div>
+      </article>
+    </dialog>
+
+    <dialog id="settingsDialog">
+      <article class="dialog-card compact-dialog">
+        <button class="close-button" id="closeSettings" aria-label="关闭">x</button>
+        <p class="eyebrow">DeepSeek</p>
+        <h2>API 配置</h2>
+        <form class="settings-form" id="apiConfigForm">
+          <label>
+            DeepSeek API Key
+            <input id="deepseekApiKey" type="password" autocomplete="off" placeholder="粘贴新的 sk-... Key" />
+          </label>
+          <label>
+            模型
+            <input id="deepseekModel" value="deepseek-chat" />
+          </label>
+          <div class="dialog-actions">
+            <button class="ghost-button" type="button" id="checkApiConfig">检查配置</button>
+            <button class="primary-button inline" type="submit">保存配置</button>
+          </div>
+          <p class="hint" id="apiConfigStatus">Key 只会保存到你电脑本地的 .env 文件里。</p>
+        </form>
+      </article>
+    </dialog>
+
+    <script src="./words.js"></script>
+    <script src="./app.js"></script>
+  </body>
+</html>
