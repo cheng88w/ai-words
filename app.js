@@ -40,7 +40,6 @@ let articleCandidates = [];
 
 const els = {
   viewTitle: document.querySelector("#viewTitle"),
-  streakCount: document.querySelector("#streakCount"),
   sessionSummary: document.querySelector("#sessionSummary"),
   todayWords: document.querySelector("#todayWords"),
   learnedToday: document.querySelector("#learnedToday"),
@@ -95,9 +94,15 @@ function addDays(dateText, days) {
 
 function loadState() {
   const saved = localStorage.getItem(STORAGE_KEY);
-  return saved ? JSON.parse(saved) : { learned: {}, checkins: [], streak: 0, quiz: { correct: 0, total: 0 } };
+  return saved ? normalizeState(JSON.parse(saved)) : normalizeState({});
 }
 
+function normalizeState(savedState) {
+  return {
+    learned: savedState.learned || {},
+    quiz: savedState.quiz || { correct: 0, total: 0 }
+  };
+}
 function saveState() {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
 }
@@ -206,7 +211,7 @@ function renderToday() {
   els.quizStatus.textContent = today.quizDone ? "已完成" : "未完成";
   els.checkinStatus.textContent = today.checkedIn ? "已完成" : "未完成";
   els.checkinButton.disabled = today.checkedIn;
-  els.checkinButton.textContent = today.checkedIn ? "今天已打卡" : "完成今日打卡";
+  els.checkinButton.textContent = today.checkedIn ? "今天已完成" : "完成今日学习";
   renderQuiz();
   updateTopStats();
 }
@@ -540,9 +545,7 @@ function renderProgress() {
   }).join("");
 }
 
-function updateTopStats() {
-  els.streakCount.textContent = state.streak;
-}
+function updateTopStats() {}
 
 function setupCategoryFilter() {
   const selected = els.categoryFilter.value;
@@ -574,29 +577,13 @@ function nextDueDate(record) {
 
 function completeCheckin() {
   if (today.learnedTerms.length < today.words.length || !today.quizDone) {
-    els.quizFeedback.textContent = "先完成学习清单并通过小测，再打卡。";
+    els.quizFeedback.textContent = "先完成学习清单并通过小测，再完成今日学习。";
     return;
-  }
-  if (!state.checkins.includes(today.date)) {
-    state.checkins.push(today.date);
-    state.streak = calculateStreak(state.checkins);
   }
   today.checkedIn = true;
   saveToday();
-  saveState();
   renderToday();
   renderProgress();
-}
-
-function calculateStreak(checkins) {
-  const dates = new Set(checkins);
-  let count = 0;
-  const cursor = new Date();
-  while (dates.has(cursor.toISOString().slice(0, 10))) {
-    count += 1;
-    cursor.setDate(cursor.getDate() - 1);
-  }
-  return count;
 }
 
 function answerQuiz(answer) {
@@ -615,7 +602,7 @@ function answerQuiz(answer) {
 
     if (today.quizIndex >= quizTerms.length) {
       today.quizDone = true;
-      els.quizFeedback.textContent = "今天所有单词都复习完成了，可以打卡。";
+      els.quizFeedback.textContent = "今天所有单词都复习完成了，可以完成今日学习。";
     } else {
       els.quizFeedback.textContent = "答对了，继续下一题。";
     }

@@ -156,29 +156,6 @@ button {
   text-transform: uppercase;
 }
 
-.streak-pill {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  min-width: 132px;
-  min-height: 54px;
-  padding: 0 16px;
-  border-radius: 8px;
-  border: 1px solid var(--line);
-  background: var(--surface);
-  box-shadow: var(--shadow-soft);
-}
-
-.streak-pill span {
-  font-size: 28px;
-  font-weight: 800;
-  color: var(--accent);
-}
-
-.streak-pill small {
-  color: var(--muted);
-}
-
 .icon-button {
   display: grid;
   place-items: center;
