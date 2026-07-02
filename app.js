@@ -80,7 +80,11 @@ const els = {
 };
 
 function todayString() {
-  return new Date().toISOString().slice(0, 10);
+  const date = new Date();
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
 }
 
 function addDays(dateText, days) {
@@ -116,12 +120,27 @@ function loadToday() {
   const saved = localStorage.getItem(TODAY_KEY);
   const date = todayString();
   if (saved) {
-    const parsed = JSON.parse(saved);
-    if (parsed.date === date) return parsed;
+    const parsed = normalizeTodaySession(JSON.parse(saved));
+    if (parsed.date === date) {
+      localStorage.setItem(TODAY_KEY, JSON.stringify(parsed));
+      return parsed;
+    }
   }
   const fresh = createTodaySession(date);
   localStorage.setItem(TODAY_KEY, JSON.stringify(fresh));
   return fresh;
+}
+
+function normalizeTodaySession(session) {
+  return {
+    date: session.date || todayString(),
+    words: Array.isArray(session.words) ? session.words : [],
+    reviewTerms: Array.isArray(session.reviewTerms) ? session.reviewTerms : [],
+    learnedTerms: Array.isArray(session.learnedTerms) ? session.learnedTerms : [],
+    quizDone: Boolean(session.quizDone),
+    quizIndex: Number.isInteger(session.quizIndex) ? session.quizIndex : 0,
+    checkedIn: Boolean(session.checkedIn)
+  };
 }
 
 function saveToday() {
@@ -131,9 +150,32 @@ function saveToday() {
 function createTodaySession(date) {
   const due = getDueReviewWords(date).slice(0, 3);
   const dueTerms = new Set(due.map((word) => word.term));
-  const unseen = allWords.filter((word) => !state.learned[word.term] && !dueTerms.has(word.term)).slice(0, 5 - due.length);
-  const selected = [...due, ...unseen].slice(0, 5);
-  return { date, words: selected.map((word) => word.term), reviewTerms: due.map((word) => word.term), learnedTerms: [], quizDone: false, checkedIn: false };
+  const learnedTerms = new Set(Object.keys(state.learned));
+  const unseen = allWords.filter((word) => !learnedTerms.has(word.term) && !dueTerms.has(word.term)).slice(0, 5 - due.length);
+  let selected = [...due, ...unseen].slice(0, 5);
+
+  if (selected.length < 5) {
+    const selectedTerms = new Set(selected.map((word) => word.term));
+    const extraReview = allWords
+      .filter((word) => learnedTerms.has(word.term) && !selectedTerms.has(word.term))
+      .sort((a, b) => {
+        const aRecord = state.learned[a.term];
+        const bRecord = state.learned[b.term];
+        return (aRecord.dueAt || date).localeCompare(bRecord.dueAt || date);
+      })
+      .slice(0, 5 - selected.length);
+    selected = [...selected, ...extraReview];
+  }
+
+  return {
+    date,
+    words: selected.map((word) => word.term),
+    reviewTerms: due.map((word) => word.term),
+    learnedTerms: [],
+    quizDone: false,
+    quizIndex: 0,
+    checkedIn: false
+  };
 }
 
 function getDueReviewWords(date = todayString()) {
@@ -194,14 +236,36 @@ function renderTodayWord(term) {
 }
 
 function renderQuiz() {
-  if (today.learnedTerms.length === 0) {
-    els.quizQuestion.textContent = "先学习单词，再开始小测";
+  const quizTerms = today.words.filter((term) => getWord(term));
+  const learnedCount = quizTerms.filter((term) => today.learnedTerms.includes(term)).length;
+
+  if (quizTerms.length === 0) {
+    quizWord = null;
+    els.quizQuestion.textContent = "今天暂无可复习单词。";
     els.quizOptions.innerHTML = "";
     return;
   }
-  if (!quizWord || !today.learnedTerms.includes(quizWord.term)) quizWord = getWord(today.learnedTerms[0]);
-  els.quizQuestion.textContent = `"${quizWord.term}" 在 AI 语境里更接近哪种含义？`;
-  const wrongOptions = allWords.filter((word) => word.term !== quizWord.term).slice(0, 3).map((word) => word.translation);
+
+  if (learnedCount < quizTerms.length) {
+    quizWord = null;
+    els.quizQuestion.textContent = `先完成今日单词，再开始小测（${learnedCount}/${quizTerms.length}）。`;
+    els.quizOptions.innerHTML = "";
+    return;
+  }
+
+  if (today.quizDone) {
+    quizWord = null;
+    els.quizQuestion.textContent = `今日 ${quizTerms.length} 个单词已全部复习完成。`;
+    els.quizOptions.innerHTML = "";
+    return;
+  }
+
+  today.quizIndex = Math.min(today.quizIndex || 0, quizTerms.length - 1);
+  quizWord = getWord(quizTerms[today.quizIndex]);
+  els.quizQuestion.textContent = `第 ${today.quizIndex + 1}/${quizTerms.length} 题："${quizWord.term}" 在 AI 语境里更接近哪种含义？`;
+  const wrongOptions = shuffle(allWords.filter((word) => word.term !== quizWord.term && word.translation !== quizWord.translation))
+    .slice(0, 3)
+    .map((word) => word.translation);
   els.quizOptions.innerHTML = shuffle([quizWord.translation, ...wrongOptions]).map((option) => `<button data-answer="${option}">${option}</button>`).join("");
 }
 
@@ -489,7 +553,9 @@ function setupCategoryFilter() {
 }
 
 function markLearned(term) {
-  if (!today.learnedTerms.includes(term)) today.learnedTerms.push(term);
+  if (today.learnedTerms.includes(term)) return;
+
+  today.learnedTerms.push(term);
   const record = state.learned[term] || { count: 0, wrong: 0, firstLearnedAt: todayString(), dueAt: todayString() };
   record.count += 1;
   record.lastLearnedAt = todayString();
@@ -534,20 +600,31 @@ function calculateStreak(checkins) {
 }
 
 function answerQuiz(answer) {
+  if (!quizWord) return;
+
+  const quizTerms = today.words.filter((term) => getWord(term));
   const correct = answer === quizWord.translation;
   const record = state.learned[quizWord.term] || { count: 0, wrong: 0, firstLearnedAt: todayString(), dueAt: todayString() };
   state.quiz.total += 1;
+
   if (correct) {
     state.quiz.correct += 1;
     record.wrong = Math.max(0, record.wrong - 1);
     record.dueAt = nextDueDate(record);
-    today.quizDone = true;
-    els.quizFeedback.textContent = "答对了，可以打卡。";
+    today.quizIndex = (today.quizIndex || 0) + 1;
+
+    if (today.quizIndex >= quizTerms.length) {
+      today.quizDone = true;
+      els.quizFeedback.textContent = "今天所有单词都复习完成了，可以打卡。";
+    } else {
+      els.quizFeedback.textContent = "答对了，继续下一题。";
+    }
   } else {
     record.wrong += 1;
     record.dueAt = todayString();
-    els.quizFeedback.textContent = `再想想：${quizWord.term} 是 ${quizWord.translation}。它会优先进入复习。`;
+    els.quizFeedback.textContent = `再想想：${quizWord.term} 是 ${quizWord.translation}。这道题会留在当前进度，答对后再进入下一题。`;
   }
+
   state.learned[quizWord.term] = record;
   saveState();
   saveToday();
