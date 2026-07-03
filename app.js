@@ -223,23 +223,20 @@ function renderTodayWord(term) {
   const record = state.learned[term];
   const meta = isReview && record ? `复习 · 已学 ${record.count} 次` : "新词";
   return `
-    <article class="word-card">
-      <div>
+    <article class="word-row">
+      <div class="word-main">
         <div class="word-title">
           <h4>${word.term}</h4>
           <span class="translation">${word.translation}</span>
           <span class="tag">${word.category}</span>
           <span class="tag alt">${meta}</span>
         </div>
-        <p>${word.simple}</p>
+        <p class="word-line"><strong>单词含义</strong>${word.simple}</p>
+        <p class="word-line"><strong>AI 语境</strong>${word.meaning}</p>
       </div>
-      <div class="actions">
-        <button class="small-button" data-detail="${word.term}">详情</button>
-        <button class="small-button ${learned ? "learned" : ""}" data-learn="${word.term}">${learned ? "已完成" : "认识了"}</button>
-      </div>
+      <button class="small-button ${learned ? "learned" : ""}" data-learn="${word.term}">${learned ? "已完成" : "认识了"}</button>
     </article>`;
 }
-
 function renderQuiz() {
   const quizTerms = today.words.filter((term) => getWord(term));
   const learnedCount = quizTerms.filter((term) => today.learnedTerms.includes(term)).length;

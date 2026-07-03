@@ -226,7 +226,6 @@ button {
   gap: 12px;
 }
 
-.word-card,
 .library-card {
   border: 1px solid var(--line);
   border-radius: 8px;
@@ -235,15 +234,27 @@ button {
   box-shadow: none;
 }
 
-.word-card {
+.word-row {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
-  gap: 14px;
-  align-items: center;
-  transition: border-color 160ms ease, background 160ms ease;
+  gap: 18px;
+  align-items: start;
+  padding: 18px 0;
+  border-bottom: 1px solid var(--line);
 }
 
-.word-card:hover,
+.word-row:first-child {
+  padding-top: 2px;
+}
+
+.word-row:last-child {
+  border-bottom: 0;
+  padding-bottom: 0;
+}
+
+.word-main {
+  min-width: 0;
+}
 .library-card:hover,
 .term-candidate:hover {
   border-color: var(--line-strong);
@@ -263,12 +274,24 @@ button {
   line-height: 1.2;
 }
 
+.word-line {
+  margin: 8px 0 0;
+  color: var(--muted);
+  line-height: 1.6;
+}
+
+.word-line strong {
+  display: inline-block;
+  min-width: 68px;
+  margin-right: 8px;
+  color: var(--ink);
+  font-size: 13px;
+}
 .translation {
   color: var(--accent-2);
   font-weight: 700;
 }
 
-.word-card p,
 .library-card p {
   margin: 8px 0 0;
   color: var(--muted);
@@ -678,7 +701,6 @@ dialog::backdrop {
 
   .topbar,
   .topbar-actions,
-  .word-card,
   .section-heading,
   .library-tools {
     grid-template-columns: 1fr;
